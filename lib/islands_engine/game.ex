@@ -30,6 +30,13 @@ defmodule IslandsEngine.Game do
     GenServer.call(game, {:set_islands, player})
   end
 
+  @doc """
+  Guess a coordinate.
+  """
+  def guess_coordinate(game, player, row, col) when player in @players do
+    GenServer.call(game, {:guess_coordinate, player, row, col})
+  end
+
   ## Server callbacks
 
   @doc """
@@ -81,6 +88,7 @@ defmodule IslandsEngine.Game do
       :error -> {:reply, :error, state_data}
       {:error, :invalid_coordinate} -> {:reply, {:error, :invalid_coordinate}, state_data}
       {:error, :invalid_island_type} -> {:reply, {:error, :invalid_island_type}, state_data}
+      {:error, :overlapping_island} -> {:reply, {:error, :overlapping_island}, state_data}
     end
   end
 
@@ -98,6 +106,33 @@ defmodule IslandsEngine.Game do
     else
       :error -> {:reply, :error, state_data}
       false -> {:reply, {:error, :not_all_islands_positioned}, state_data}
+    end
+  end
+
+  @doc """
+  Handle call for guessing a coordinate. We need to check whether..:
+  - The rules allow the given player to guess?
+  - The row and column values make a valid coordinate?
+  - The guess was a hit or a miss, whether it forested an island, and whether it won the game?
+  - The state should transition to game over?
+  """
+  def handle_call({:guess_coordinate, player_key, row, col}, _from, state_data) do
+    opponent_key = opponent(player_key)
+    opponent_board = player_board(state_data, opponent_key)
+
+    with {:ok, rules} <- Rules.check(state_data.rules, {:guess_coordinate, player_key}),
+         {:ok, coordinate} <- Coordinate.new(row, col),
+         {hit_or_miss, forested_island, win_status, opponent_board} <-
+           Board.guess(opponent_board, coordinate),
+         {:ok, rules} <- Rules.check(rules, {:win_check, win_status}) do
+      state_data
+      |> update_board(opponent_key, opponent_board)
+      |> update_guesses(player_key, hit_or_miss, coordinate)
+      |> update_rules(rules)
+      |> reply_success({hit_or_miss, forested_island, win_status})
+    else
+      :error -> {:reply, :error, state_data}
+      {:error, :invalid_coordinate} -> {:reply, {:error, :invalid_coordinate}, state_data}
     end
   end
 
@@ -126,4 +161,15 @@ defmodule IslandsEngine.Game do
   defp update_board(state_data, player, board) do
     Map.update!(state_data, player, fn player -> %{player | board: board} end)
   end
+
+  # Update guesses of given player
+  defp update_guesses(state_data, player_key, hit_or_miss, coordinate) do
+    update_in(state_data[player_key].guesses, fn guesses ->
+      Guesses.add(guesses, hit_or_miss, coordinate)
+    end)
+  end
+
+  # Get opponent of given player
+  defp opponent(:player1), do: :player2
+  defp opponent(:player2), do: :player1
 end
