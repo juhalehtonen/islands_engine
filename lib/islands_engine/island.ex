@@ -25,6 +25,50 @@ defmodule IslandsEngine.Island do
     end
   end
 
+  @doc """
+  Guess a coordinate.
+
+  If a guessed coordinate is a member of the coordinates set, we need to transform
+  the island by adding the coordinate to the hit coordinates set, and then return
+  a tuple containing :hit and the transformed island.
+
+  If the guessed coordinate is not in the coordinates set, we don need to do any
+  transformation and we can just return :miss.
+  """
+  def guess(island, coordinate) do
+    case MapSet.member?(island.coordinates, coordinate) do
+      true ->
+        hit_coordinates = MapSet.put(island.hit_coordinates, coordinate)
+        {:hit, %{island | hit_coordinates: hit_coordinates}}
+
+      false ->
+        :miss
+    end
+  end
+
+  @doc """
+  Check if an island is fully forested by checking if all coordinates of the island
+  have been hit.
+  """
+  def forested?(island) do
+    MapSet.equal?(island.coordinates, island.hit_coordinates)
+  end
+
+  @doc """
+  Return the list of valid types. Used to check if all valid types have been positioned.
+  """
+  def types() do
+    [:atoll, :dot, :l_shape, :s_shape, :square]
+  end
+
+  @doc """
+  Check if an existing island overlaps with a new island by using MapSet.disjoint?.
+  Disjointed MapSets share no members.
+  """
+  def overlaps?(existing_island, new_island) do
+    not MapSet.disjoint?(existing_island.coordinates, new_island.coordinates)
+  end
+
   # We use reduce_while to validate our island positions, as we need to make sure
   # that the island cannot overflow the board.
   defp add_coordinates(offsets, upper_left) do
