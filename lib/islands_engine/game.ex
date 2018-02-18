@@ -3,8 +3,9 @@ defmodule IslandsEngine.Game do
   alias IslandsEngine.{Board, Coordinate, Guesses, Island, Rules}
   # Limit players to two accepted values
   @players [:player1, :player2]
-  # Timeout a GenServer after a day if no messages are received
-  @timeout 60 * 60 * 24 * 1000
+  # Timeout a GenServer after 2 minutes if no messages are received
+  # TODO: Adjust this as we build a better UI that handles disconnects
+  @timeout 60 * 2 * 1000
 
   ## Client API
 
