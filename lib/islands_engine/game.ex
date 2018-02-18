@@ -6,7 +6,7 @@ defmodule IslandsEngine.Game do
   ## Client API
 
   def start_link(name) when is_binary(name) do
-    GenServer.start_link(__MODULE__, name, [])
+    GenServer.start_link(__MODULE__, name, name: via_tuple(name))
   end
 
   @doc """
@@ -137,6 +137,13 @@ defmodule IslandsEngine.Game do
   end
 
   ## Helpers
+
+  @doc """
+  Helper to return the :via tuple required by a process Registry.
+  """
+  def via_tuple(name) do
+    {:via, Registry, {Registry.Game, name}}
+  end
 
   defp update_player2_name(state_data, name) do
     put_in(state_data.player2.name, name)
