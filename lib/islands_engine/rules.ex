@@ -50,8 +50,40 @@ defmodule IslandsEngine.Rules do
     end
   end
 
-  defp both_players_islands_set?(rules) do
-    rules.player1 == :islands_set && rules.player2 == :islands_set
+  @doc """
+  When its player1s turn, it is OK for player1 to guess a coordinate, and the state
+  should transition to :player2_turn.
+  """
+  def check(%Rules{state: :player1_turn} = rules, {:guess_coordinate, :player1}) do
+    {:ok, %Rules{rules | state: :player2_turn}}
+  end
+
+  @doc """
+  Check if player1 wins and transition to :game_over if they do.
+  """
+  def check(%Rules{state: :player1_turn} = rules, {:win_check, win_or_not}) do
+    case win_or_not do
+      :no_win -> {:ok, rules}
+      :win -> {:ok, %Rules{rules | state: :game_over}}
+    end
+  end
+
+  @doc """
+  When its player2s turn, it is OK for player2 to guess a coordinate, and the state
+  should transition to :player1_turn.
+  """
+  def check(%Rules{state: :player2_turn} = rules, {:guess_coordinate, :player2}) do
+    {:ok, %Rules{rules | state: :player1_turn}}
+  end
+
+  @doc """
+  Check if player2 wins and transition to :game_over if they do.
+  """
+  def check(%Rules{state: :player2_turn} = rules, {:win_check, win_or_not}) do
+    case win_or_not do
+      :no_win -> {:ok, rules}
+      :win -> {:ok, %Rules{rules | state: :game_over}}
+    end
   end
 
   @doc """
@@ -59,5 +91,10 @@ defmodule IslandsEngine.Rules do
   """
   def check(_state, _action) do
     :error
+  end
+
+  # Check if both players have their islands set
+  defp both_players_islands_set?(rules) do
+    rules.player1 == :islands_set && rules.player2 == :islands_set
   end
 end
