@@ -11,7 +11,8 @@ defmodule IslandsEngine.Application do
       # Starts a worker by calling: IslandsEngine.Worker.start_link(arg)
       # {IslandsEngine.Worker, arg},
       # Start our Process Registry
-      {Registry, keys: :unique, name: Registry.Game}
+      {Registry, keys: :unique, name: Registry.Game},
+      IslandsEngine.GameSupervisor
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
