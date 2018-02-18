@@ -1,6 +1,7 @@
 defmodule IslandsEngine.Game do
   use GenServer, start: {__MODULE__, :start_link, []}, restart: :transient
   alias IslandsEngine.{Board, Coordinate, Guesses, Island, Rules}
+  # Limit players to two accepted values
   @players [:player1, :player2]
   # Timeout a GenServer after a day if no messages are received
   @timeout 60 * 60 * 24 * 1000
@@ -42,13 +43,14 @@ defmodule IslandsEngine.Game do
   ## Server callbacks
 
   @doc """
-  Initialize a game with two players and a set of rules. The first player has the
-  name but the second player is left anonymous until he or she joins up.
+  Initialize a game. Uses state from ETS if available for given name, or fresh
+  state for new names. We dont use @timeout here because the game process will
+  always receive a new message immediately from send(self(), {:set_state, name})
+  This makes it impossible for the process to ever time out.
   """
   def init(name) do
-    player1 = %{name: name, board: Board.new(), guesses: Guesses.new()}
-    player2 = %{name: nil, board: Board.new(), guesses: Guesses.new()}
-    {:ok, %{player1: player1, player2: player2, rules: %Rules{}}, @timeout}
+    send(self(), {:set_state, name})
+    {:ok, fresh_state(name)}
   end
 
   @doc """
@@ -155,6 +157,30 @@ defmodule IslandsEngine.Game do
     {:stop, {:shutdown, :timeout}, state_data}
   end
 
+  @doc """
+  Set state upon game creation.
+  """
+  def handle_info({:set_state, name}, _state_data) do
+    state_data =
+      case :ets.lookup(:game_state, name) do
+        [] -> fresh_state(name)
+        [{_key, state}] -> state
+      end
+
+    :ets.insert(:game_state, {name, state_data})
+    {:noreply, state_data, @timeout}
+  end
+
+  @doc """
+  Clean up state after a GenServer timeout but not due to any other termination.
+  """
+  def terminate({:shutdown, :timeout}, state_data) do
+    :ets.delete(:game_state, state_data.player1.name)
+    :ok
+  end
+
+  def terminate(_reason, _state), do: :ok
+
   ## Helpers
 
   @doc """
@@ -173,8 +199,10 @@ defmodule IslandsEngine.Game do
     %{state_data | rules: rules}
   end
 
-  # Create a reply for successful calls
+  # Create a reply for successful calls, and insert game state to ETS for each
+  # successful reply.
   defp reply_success(state_data, reply) do
+    :ets.insert(:game_state, {state_data.player1.name, state_data})
     {:reply, reply, state_data, @timeout}
   end
 
@@ -198,4 +226,12 @@ defmodule IslandsEngine.Game do
   # Get opponent of given player
   defp opponent(:player1), do: :player2
   defp opponent(:player2), do: :player1
+
+  # Helper for fresh state. Used if no saved state is found from ETS.
+  # Only player1 is named because we register games based on p1 name.
+  defp fresh_state(name) do
+    player1 = %{name: name, board: Board.new(), guesses: Guesses.new()}
+    player2 = %{name: nil, board: Board.new(), guesses: Guesses.new()}
+    %{player1: player1, player2: player2, rules: %Rules{}}
+  end
 end

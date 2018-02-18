@@ -15,6 +15,9 @@ defmodule IslandsEngine.Application do
       IslandsEngine.GameSupervisor
     ]
 
+    # Create ETS table for fault tolerance, keep state if GenServers crash
+    :ets.new(:game_state, [:public, :named_table])
+
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: IslandsEngine.Supervisor]
