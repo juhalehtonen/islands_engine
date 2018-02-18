@@ -1,21 +1,5 @@
 # IslandsEngine
 
-**TODO: Add description**
+An Elixir/OTP game engine for Islands, a battleship-esque multiplayer game. All code is based on the book [Functional Web Development with Elixir, OTP, and Phoenix](https://pragprog.com/book/lhelph/functional-web-development-with-elixir-otp-and-phoenix) by Lance Halvorsen.
 
-## Installation
-
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `islands_engine` to your list of dependencies in `mix.exs`:
-
-```elixir
-def deps do
-  [
-    {:islands_engine, "~> 0.1.0"}
-  ]
-end
-```
-
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/islands_engine](https://hexdocs.pm/islands_engine).
-
+The Phoenix-based web UI for the game resides in a different, private repository, so this repo doesn't come with a playable setup. See the book for details on how to manage the UI with Phoenix.
