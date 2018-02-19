@@ -2,9 +2,14 @@ version: 2
 jobs:
   build:
     docker:
+      # Bump cache key version below when changing elixir version
       - image: circleci/elixir:1.6.1
 
     steps:
       - checkout
+      - run: mix local.hex --force
+      - run: mix local.rebar --force
       - run: mix deps.get
-      - run: mix test
+      - run: mix deps.compile
+      - run: mix compile
+      - run: mix text
